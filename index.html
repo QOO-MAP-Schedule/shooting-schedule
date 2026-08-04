@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="拍攝行程">
+<meta name="theme-color" content="#2d6a4f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>拍攝行程管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+  :root{--bg:#f5f4f0;--surface:#fff;--surface2:#f0ede8;--border:#e0dbd4;--text:#1a1814;--text2:#6b6560;--text3:#a09b95;--accent:#2d6a4f;--accent-light:#e8f4ee;--accent-mid:#52b788;--danger:#c0392b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px}
+  body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:1rem;min-height:100vh}
+  header{background:var(--accent);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .logo{color:#fff;font-size:16px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+  .logo svg{width:22px;height:22px}
+  .nav-tabs{display:flex;gap:4px}
+  .nav-tab{padding:8px 16px;border-radius:20px;font-size:14px;font-weight:500;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.7);transition:all .15s;font-family:'Noto Sans TC',sans-serif}
+  .nav-tab:hover{color:#fff;background:rgba(255,255,255,.1)}
+  .nav-tab.active{background:rgba(255,255,255,.2);color:#fff}
+  .page{display:none}.page.active{display:block}
+  .form-wrap{max-width:760px;margin:24px auto;padding:0 16px 40px}
+  .page-title{font-size:22px;font-weight:700;margin-bottom:4px}
+  .page-sub{font-size:14px;color:var(--text2);margin-bottom:20px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px}
+  .card-title{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+  .section-divider{display:flex;align-items:center;gap:10px;margin:18px 0 14px;color:var(--text3);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .form-group{display:flex;flex-direction:column;gap:6px}
+  .form-group.full{grid-column:1/-1}
+  label{font-size:13px;font-weight:500;color:var(--text2)}
+  label .req{color:var(--danger);margin-left:2px}
+  label .unit{color:var(--text3);font-weight:400;margin-left:3px}
+  input,select,textarea{padding:10px 13px;border:1px solid var(--border);border-radius:8px;font-size:15px;font-family:'Noto Sans TC',sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent-mid)}
+  textarea{resize:vertical;min-height:80px}
+  .search-trigger-btn{width:100%;padding:13px 16px;border-radius:8px;border:1.5px dashed var(--accent-mid);background:var(--accent-light);color:var(--accent);font-size:15px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .search-trigger-btn:hover{background:var(--accent);color:#fff;border-style:solid}
+  .btn-row{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+  .btn{padding:11px 26px;border-radius:8px;font-size:15px;font-weight:500;font-family:'Noto Sans TC',sans-serif;cursor:pointer;border:none;transition:all .15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#245a42}
+  .btn-primary:disabled{background:#aaa;cursor:not-allowed}
+  .btn-danger{background:var(--danger);color:#fff}
+  .btn-danger:hover{background:#a93226}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}
+  .btn-ghost:hover{background:var(--surface2)}
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--accent);color:#fff;padding:13px 26px;border-radius:24px;font-size:15px;font-weight:500;transition:transform .3s ease;z-index:999;pointer-events:none;white-space:nowrap}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.error{background:var(--danger)}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:16px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface);border-radius:16px;width:600px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+  .modal-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .modal-title{font-size:17px;font-weight:700}
+  .modal-close{background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer;padding:2px 8px;border-radius:6px;line-height:1}
+  .modal-close:hover{background:var(--surface2);color:var(--text)}
+  .modal-body{padding:18px 22px;flex:1;overflow-y:auto}
+  .price-range-row{display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:center;margin-bottom:16px}
+  .price-range-row input{text-align:center}
+  .price-range-sep{color:var(--text3);font-size:14px;text-align:center}
+  .price-unit{font-size:13px;color:var(--text3);white-space:nowrap;padding-top:10px}
+  .search-action-row{display:flex;justify-content:center;margin-bottom:16px}
+  .search-action-btn{padding:11px 36px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:15px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+  .search-action-btn:hover{background:#245a42}
+  .results-header{font-size:13px;color:var(--text3);margin-bottom:10px;font-weight:500}
+  .result-item{padding:12px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer;margin-bottom:8px;transition:all .15s}
+  .result-item:hover{border-color:var(--accent-mid);background:var(--accent-light)}
+  .result-item.selected{border-color:var(--accent);background:var(--accent-light);box-shadow:0 0 0 2px rgba(45,106,79,.15)}
+  .result-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+  .result-price{color:var(--accent);font-size:15px;font-weight:700}
+  .result-meta{font-size:13px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap}
+  .result-empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:14px}
+  .searching-state{text-align:center;padding:40px 20px;color:var(--text3);font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px}
+  .modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .selected-label{font-size:14px;color:var(--accent);font-weight:500}
+  .schedule-layout{display:flex;height:calc(100vh - 56px)}
+  .schedule-left{width:340px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+  .schedule-left-header{padding:16px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .schedule-left-title{font-size:15px;font-weight:700}
+  .refresh-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:13px;color:var(--text2);cursor:pointer;font-family:'Noto Sans TC',sans-serif}
+  .refresh-btn:hover{background:var(--surface2)}
+  .schedule-scroll{flex:1;overflow-y:auto;padding:14px}
+  .day-group{margin-bottom:10px}
+  .day-bubble{border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;background:var(--surface)}
+  .day-bubble:hover{border-color:var(--accent-mid);background:var(--accent-light);box-shadow:0 2px 8px rgba(45,106,79,.08)}
+  .day-bubble.pinned{border-color:var(--accent);background:var(--accent-light)}
+  .day-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .day-label{font-size:14px;font-weight:700;color:var(--text)}
+  .day-count{font-size:12px;padding:2px 9px;border-radius:10px;background:var(--surface2);color:var(--text2);font-weight:500}
+  .day-bubble.pinned .day-count{background:var(--accent);color:#fff}
+  .item-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
+  .item-row:first-of-type{border-top:none;padding-top:0}
+  .item-time{font-size:12px;color:var(--accent);font-weight:700;min-width:40px;padding-top:1px}
+  .item-info{flex:1;min-width:0}
+  .item-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item-meta{font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .schedule-right{flex:1;position:relative;background:var(--bg)}
+  #map{width:100%;height:100%}
+  .map-hint-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;background:rgba(245,244,240,.85);transition:opacity .3s}
+  .map-disabled-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--surface2);z-index:5}
+  .map-disabled-text{font-size:15px;color:var(--text3);text-align:center;margin-top:12px}
+  .map-hint-overlay.hidden{opacity:0;pointer-events:none}
+  .map-hint-text{font-size:15px;color:var(--text2);text-align:center;margin-top:12px}
+  .map-date-badge{position:absolute;top:14px;left:14px;background:var(--accent);color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:700;display:none;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:10}
+  .map-open-btn{position:absolute;bottom:20px;right:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;display:none;box-shadow:0 2px 12px rgba(0,0,0,.2);z-index:10}
+  .map-open-btn:hover{background:#245a42}
+  .loading-wrap{display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3);font-size:14px;gap:8px}
+  .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--text3);font-size:14px}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin-top:6px}
+  .info-row{font-size:12px;color:#444;line-height:1.7}
+  .info-label{color:#888;font-size:11px}
+  .edit-btn{display:inline-block;margin-top:10px;padding:6px 14px;border-radius:6px;background:var(--accent);color:#fff;border:none;font-size:12px;font-weight:700;font-family:sans-serif;cursor:pointer;width:100%}
+  .edit-btn:hover{background:#245a42}
+  @media(max-width:700px){
+    html{font-size:17px}
+    .form-grid,.form-grid-3{grid-template-columns:1fr}
+    .schedule-layout{flex-direction:column}
+    .schedule-left{width:100%;height:45vh;border-right:none;border-bottom:1px solid var(--border)}
+    .schedule-right{height:55vh}
+    .nav-tab{padding:6px 12px;font-size:13px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l-4 4l6 6l4-16l-18 7l4 2l2 6l2-4"/></svg>
+    拍攝行程管理
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('schedule')">&#128203; 行程</button>
+    <button class="nav-tab" onclick="switchPage('form')">&#43; 新增</button>
+  </div>
+</header>
+
+<!-- 行程總覽 -->
+<div class="page active" id="page-schedule">
+  <div class="schedule-layout">
+    <div class="schedule-left">
+      <div class="schedule-left-header">
+        <span class="schedule-left-title">已排行程</span>
+        <button class="refresh-btn" onclick="loadSchedule()">&#8635; 重新整理</button>
+      </div>
+      <div class="schedule-scroll" id="schedule-list">
+        <div class="loading-wrap"><div class="spinner"></div>載入中…</div>
+      </div>
+    </div>
+    <div class="schedule-right">
+      <div id="map"></div>
+      <div class="map-disabled-overlay" id="map-disabled" style="display:none">
+        <div style="font-size:52px;opacity:.3">&#128506;</div>
+        <div class="map-disabled-text">地圖功能已暫停使用<br><span style="font-size:13px">如需開啟請聯繫管理員</span></div>
+      </div>
+      <div class="map-hint-overlay" id="map-hint">
+        <div style="font-size:52px;opacity:.3">&#128506;</div>
+        <div class="map-hint-text">將滑鼠移到左側日期氣泡<br>查看當天拍攝物件位置</div>
+      </div>
+      <div class="map-date-badge" id="map-badge"></div>
+      <button class="map-open-btn" id="map-open-btn" onclick="openGoogleMap()">在 Google Maps 開啟路線 &#8599;</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新增物件 -->
+<div class="page" id="page-form">
+  <div class="form-wrap">
+    <div class="page-title">新增拍攝物件</div>
+    <div class="page-sub">填寫完成後送出，資料會同步至共用行程資料庫。</div>
+    <div class="card">
+      <div class="card-title">拍攝安排</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>拍攝日期<span class="req">*</span></label>
+          <input type="date" id="f-date" onchange="checkTimeConflict()">
+        </div>
+        <div class="form-group">
+          <label>拍攝時間<span class="req">*</span></label>
+          <input type="time" id="f-time" onchange="checkTimeConflict()">
+        </div>
+        <div class="form-group">
+          <label>承辦<span class="req">*</span></label>
+          <input type="text" id="f-agent" placeholder="輸入承辦姓名">
+        </div>
+        <div class="form-group">
+          <label>是否專任</label>
+          <select id="f-exclusive">
+            <option value="否" selected>否</option>
+            <option value="是">是</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Google Maps 網址<span class="req">*</span></label>
+          <input type="url" id="f-mapurl" placeholder="https://maps.app.goo.gl/...">
+        </div>
+        <div class="form-group">
+          <label>廣告連結</label>
+          <input type="url" id="f-adurl" placeholder="https://buy.u-trust.com.tw/house/...">
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">物件資訊</div>
+      <button class="search-trigger-btn" onclick="openSearchModal()">&#128269; 搜尋物件（依價格範圍）</button>
+      <div class="section-divider" style="margin-top:18px">物件詳細資料</div>
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="form-group">
+          <label>社區 / 建案名稱</label>
+          <input type="text" id="f-name" placeholder="例：水岸豪庭">
+        </div>
+        <div class="form-group">
+          <label>地址</label>
+          <input type="text" id="f-addr" placeholder="例：台中市西屯區市政北一路100號">
+        </div>
+        <div class="form-group">
+          <label>價格<span class="unit">（萬）</span></label>
+          <input type="number" id="f-price" placeholder="例：1280">
+        </div>
+        <div class="form-group">
+          <label>格局</label>
+          <input type="text" id="f-layout" placeholder="例：3房2廳2衛">
+        </div>
+        <div class="form-group">
+          <label>屋齡<span class="unit">（年）</span></label>
+          <input type="number" step="0.1" id="f-age" placeholder="例：15">
+        </div>
+        <div class="form-group">
+          <label>樓層</label>
+          <input type="text" id="f-floor" placeholder="例：8/12F">
+        </div>
+        <div class="form-group">
+          <label>總建坪<span class="unit">（坪）</span></label>
+          <input type="number" step="0.01" id="f-build-area" placeholder="例：38.5">
+        </div>
+        <div class="form-group">
+          <label>地坪<span class="unit">（坪）</span></label>
+          <input type="number" step="0.01" id="f-land-area" placeholder="例：12.3">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>備註</label>
+        <textarea id="f-desc" placeholder="備註說明…"></textarea>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="clearForm()">清除</button>
+      <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">送出新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- 搜尋物件 Modal -->
+<div class="modal-overlay" id="search-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">&#128269; 搜尋物件</span>
+      <button class="modal-close" onclick="closeSearchModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:6px;font-size:13px;color:var(--text2);font-weight:500">價格範圍</div>
+      <div class="price-range-row">
+        <input type="number" id="modal-min-price" placeholder="最低價">
+        <span class="price-range-sep">～</span>
+        <input type="number" id="modal-max-price" placeholder="最高價">
+        <span class="price-unit">萬</span>
+      </div>
+      <div class="search-action-row">
+        <button class="search-action-btn" onclick="doSearch()">開始搜尋</button>
+      </div>
+      <div id="search-results-header" class="results-header" style="display:none"></div>
+      <div id="search-results"><div class="result-empty">請輸入價格範圍後搜尋</div></div>
+    </div>
+    <div class="modal-footer">
+      <span class="selected-label" id="selected-label"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeSearchModal()">取消</button>
+        <button class="btn btn-primary" id="modal-confirm-btn" onclick="confirmSelection()" disabled>確認選擇</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 編輯物件 Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">&#9998; 編輯排程</span>
+      <button class="modal-close" onclick="closeEditModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="card" style="box-shadow:none;border:none;padding:0;margin:0">
+        <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">拍攝安排</div>
+        <div class="form-grid" style="margin-bottom:14px">
+          <div class="form-group"><label>拍攝日期<span class="req">*</span></label><input type="date" id="e-date"></div>
+          <div class="form-group"><label>拍攝時間<span class="req">*</span></label><input type="time" id="e-time"></div>
+          <div class="form-group"><label>承辦<span class="req">*</span></label><input type="text" id="e-agent"></div>
+          <div class="form-group"><label>是否專任</label>
+            <select id="e-exclusive"><option value="否">否</option><option value="是">是</option></select>
+          </div>
+          <div class="form-group"><label>Google Maps 網址</label><input type="url" id="e-mapurl"></div>
+          <div class="form-group"><label>廣告連結</label><input type="url" id="e-adurl"></div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">物件資訊</div>
+        <div class="form-grid" style="margin-bottom:12px">
+          <div class="form-group"><label>社區 / 建案名稱</label><input type="text" id="e-name"></div>
+          <div class="form-group"><label>地址</label><input type="text" id="e-addr"></div>
+          <div class="form-group"><label>價格<span class="unit">（萬）</span></label><input type="number" id="e-price"></div>
+          <div class="form-group"><label>格局</label><input type="text" id="e-layout"></div>
+          <div class="form-group"><label>屋齡<span class="unit">（年）</span></label><input type="number" step="0.1" id="e-age"></div>
+          <div class="form-group"><label>樓層</label><input type="text" id="e-floor"></div>
+          <div class="form-group"><label>總建坪<span class="unit">（坪）</span></label><input type="number" step="0.01" id="e-build-area"></div>
+          <div class="form-group"><label>地坪<span class="unit">（坪）</span></label><input type="number" step="0.01" id="e-land-area"></div>
+          <div class="form-group full"><label>備註</label><textarea id="e-desc" style="min-height:60px"></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="deleteItem()">&#128465; 刪除排程</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeEditModal()">取消</button>
+        <button class="btn btn-primary" id="edit-save-btn" onclick="saveEdit()">儲存修改</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 衝突提醒 Modal -->
+<div class="modal-overlay" id="conflict-overlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title" id="conflict-title"></span>
+      <button class="modal-close" onclick="document.getElementById('conflict-overlay').classList.remove('open')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p id="conflict-msg" style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-line"></p>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end">
+      <button class="btn btn-primary" onclick="document.getElementById('conflict-overlay').classList.remove('open')">了解，繼續填寫</button>
+    </div>
+  </div>
+</div>
+
+<!-- iOS 安裝提示 -->
+<div id="install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1814;color:#fff;padding:14px 16px;z-index:1000;align-items:center;gap:12px;font-size:13px">
+  <div style="font-size:28px">&#128247;</div>
+  <div style="flex:1;line-height:1.5">
+    <div style="font-weight:700;font-size:14px">加入主畫面</div>
+    <div style="color:rgba(255,255,255,.7)">點擊下方 <strong>&#9633;</strong> 再選「加入主畫面」即可安裝</div>
+  </div>
+  <button onclick="document.getElementById('install-banner').style.display='none'" style="background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer">關閉</button>
+</div>
+
+<!-- 今日行程提醒 Modal -->
+<div class="modal-overlay" id="today-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title">&#128197; 今日行程提醒</span>
+      <button class="modal-close" onclick="closeTodayModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div id="today-modal-content" style="font-size:14px;line-height:1.8;color:var(--text)"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;align-items:center">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer;font-weight:400">
+        <input type="checkbox" id="today-no-show" style="width:16px;height:16px;cursor:pointer;border:none;padding:0">
+        今日不再顯示
+      </label>
+      <button class="btn btn-primary" onclick="closeTodayModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var map, markers = [], geocoder, activeDate = null, currentMapItems = [];
+var selectedCase = null;
+var scheduleCache = [];
+var editingRowIndex = null;
+var mapEnabled = true;
+
+window.addEventListener('load', function() {
+  loadSchedule();
+  document.getElementById('f-date').valueAsDate = new Date();
+});
+
+function switchPage(p) {
+  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(el){ el.classList.remove('active'); });
+  document.getElementById('page-' + p).classList.add('active');
+  document.querySelectorAll('.nav-tab')[p === 'schedule' ? 0 : 1].classList.add('active');
+}
+
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '') + ' show';
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
+}
+
+function loadSchedule() {
+  var list = document.getElementById('schedule-list');
+  list.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>載入中…</div>';
+  clearPins();
+  google.script.run
+    .withSuccessHandler(function(result) {
+      var data = result.data || [];
+      mapEnabled = result.mapEnabled !== false;
+      scheduleCache = data;
+      checkMapStatus();
+      if (!data || data.length === 0) list.innerHTML = '<div class="empty-state">目前還沒有排定的行程</div>';
+      else renderSchedule(data);
+      showTodayModal(data);
+    })
+    .withFailureHandler(function() { list.innerHTML = '<div class="empty-state">載入失敗，請點重新整理再試</div>'; })
+    .getScheduleData();
+}
+
+function checkMapStatus() {
+  var disabled = document.getElementById('map-disabled');
+  var openBtn = document.getElementById('map-open-btn');
+  if (!mapEnabled) {
+    disabled.style.display = 'flex';
+    if (openBtn) openBtn.style.display = 'none';
+  } else {
+    disabled.style.display = 'none';
+  }
+}
+
+function showTodayModal(data) {
+  var today = new Date();
+  var y = today.getFullYear();
+  var mo = String(today.getMonth()+1).padStart(2,'0');
+  var d = String(today.getDate()).padStart(2,'0');
+  var todayStr = y + '-' + mo + '-' + d;
+
+  // 檢查今日不再顯示
+  var noShowKey = 'todayModal_noShow_' + todayStr;
+  try {
+    if (localStorage.getItem(noShowKey) === '1') return;
+  } catch(e) {}
+
+  var todayItems = (data || []).filter(function(x){ return x['拍攝日期'] === todayStr; });
+  todayItems.sort(function(a,b){ return (a['拍攝時間']||'').localeCompare(b['拍攝時間']||''); });
+
+  var contentEl = document.getElementById('today-modal-content');
+  var mo2 = parseInt(mo), d2 = parseInt(d);
+  var wd = ['日','一','二','三','四','五','六'][today.getDay()];
+  var dateLabel = mo2 + '月' + d2 + '日（週' + wd + '）';
+
+  if (todayItems.length === 0) {
+    contentEl.innerHTML = '<div style="text-align:center;padding:16px 0">' +
+      '<div style="font-size:40px;margin-bottom:12px">&#128308;</div>' +
+      '<div style="font-size:16px;font-weight:700;color:var(--text2)">' + dateLabel + '</div>' +
+      '<div style="font-size:14px;color:var(--text3);margin-top:6px">今日無安排行程</div>' +
+      '</div>';
+  } else {
+    var rows = todayItems.map(function(it, i) {
+      var isEx = it['是否專任'] === '是';
+      var nameColor = isEx ? '#c0392b' : 'var(--text)';
+      return '<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;' + (i>0?'border-top:1px solid var(--border)':'') + '">' +
+        '<div style="min-width:44px;font-size:15px;font-weight:700;color:var(--accent);padding-top:1px">' + fmtTimeSimple(it['拍攝時間']) + '</div>' +
+        '<div style="flex:1">' +
+          '<div style="font-size:14px;font-weight:700;color:' + nameColor + '">' + (it['社區/建案名稱']||'—') + (isEx?' &#9733;':'') + '</div>' +
+          '<div style="font-size:12px;color:var(--text3)">' + (it['承辦']||'') + (it['物件地址']?'　'+it['物件地址']:'') + '</div>' +
+        '</div></div>';
+    }).join('');
+    contentEl.innerHTML =
+      '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">' +
+      dateLabel + '　共 ' + todayItems.length + ' 件</div>' + rows;
+  }
+
+  document.getElementById('today-no-show').checked = false;
+  document.getElementById('today-modal').classList.add('open');
+}
+
+function closeTodayModal() {
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  if (document.getElementById('today-no-show').checked) {
+    try { localStorage.setItem('todayModal_noShow_' + todayStr, '1'); } catch(e) {}
+  }
+  document.getElementById('today-modal').classList.remove('open');
+}
+
+function fmtDateSimple(raw) {
+  if (!raw) return '';
+  var s = String(raw).trim();
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return parseInt(m[2]) + '月' + parseInt(m[3]) + '日';
+  var d = new Date(s);
+  if (!isNaN(d.getTime()) && d.getFullYear() > 1900) return (d.getMonth()+1) + '月' + d.getDate() + '日';
+  return s;
+}
+
+function fmtTimeSimple(raw) {
+  if (!raw) return '';
+  var s = String(raw).trim();
+  if (/^\d{1,2}:\d{2}/.test(s)) return s.substring(0, 5);
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  return s;
+}
+
+function fmtDayLabel(raw) {
+  if (!raw) return '';
+  var s = String(raw).trim();
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  var d = m ? new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3])) : new Date(s);
+  if (!d || isNaN(d.getTime()) || d.getFullYear() < 1900) return s;
+  var wd = ['日','一','二','三','四','五','六'][d.getDay()];
+  return (d.getMonth()+1) + '月' + d.getDate() + '日（週' + wd + '）';
+}
+
+function groupByDate(arr) {
+  var m = {};
+  arr.forEach(function(x) {
+    var d = x['拍攝日期'] || '';
+    if (d) { if (!m[d]) m[d] = []; m[d].push(x); }
+  });
+  return m;
+}
+
+function renderSchedule(data) {
+  var list = document.getElementById('schedule-list');
+  var groups = groupByDate(data);
+  var dates = Object.keys(groups).sort();
+  if (!dates.length) { list.innerHTML = '<div class="empty-state">目前還沒有排定的行程</div>'; return; }
+  list.innerHTML = '';
+  dates.forEach(function(date) {
+    var items = groups[date].sort(function(a,b){ return (a['拍攝時間']||'').localeCompare(b['拍攝時間']||''); });
+    var div = document.createElement('div'); div.className = 'day-group';
+    var rows = items.map(function(it) {
+      var isExclusive = it['是否專任'] === '是';
+      var nameStyle = isExclusive ? ' style="color:#c0392b"' : '';
+      return '<div class="item-row">' +
+        '<span class="item-time">' + fmtTimeSimple(it['拍攝時間']) + '</span>' +
+        '<div class="item-info">' +
+          '<div class="item-name"' + nameStyle + '>' + (it['社區/建案名稱']||'—') + '</div>' +
+          '<div class="item-meta">' + (it['承辦']||'') + (it['物件地址']?'・'+it['物件地址']:'') + '</div>' +
+        '</div></div>';
+    }).join('');
+    div.innerHTML = '<div class="day-bubble" data-date="' + date + '">' +
+      '<div class="day-header"><span class="day-label">' + fmtDayLabel(date) + '</span><span class="day-count">' + items.length + ' 件</span></div>' +
+      rows + '</div>';
+    var bubble = div.querySelector('.day-bubble');
+    bubble.addEventListener('mouseenter', function(){ showPins(date, items, bubble); });
+    bubble.addEventListener('mouseleave', function(){ if (activeDate !== date) clearPinsVisual(); });
+    bubble.addEventListener('click', function() {
+      if (activeDate === date) { activeDate = null; bubble.classList.remove('pinned'); clearPins(); }
+      else { activeDate = date; document.querySelectorAll('.day-bubble').forEach(function(b){ b.classList.remove('pinned'); }); bubble.classList.add('pinned'); showPins(date, items, bubble); }
+    });
+    list.appendChild(div);
+  });
+}
+
+function clearPins() {
+  markers.forEach(function(m){ if(m&&m.setMap) m.setMap(null); }); markers = [];
+  document.getElementById('map-hint').classList.remove('hidden');
+  document.getElementById('map-badge').style.display = 'none';
+  document.getElementById('map-open-btn').style.display = 'none';
+  activeDate = null;
+  document.querySelectorAll('.day-bubble').forEach(function(b){ b.classList.remove('pinned'); });
+}
+
+function clearPinsVisual() {
+  if (activeDate) return;
+  markers.forEach(function(m){ if(m&&m.setMap) m.setMap(null); }); markers = [];
+  document.getElementById('map-hint').classList.remove('hidden');
+  document.getElementById('map-badge').style.display = 'none';
+  document.getElementById('map-open-btn').style.display = 'none';
+}
+
+function u(val, unit) {
+  var s = String(val||'').trim();
+  return s ? s + unit : '';
+}
+
+function buildInfoContent(item) {
+  var mapUrl = item['Google Maps 網址'] || '';
+  var adUrl = item['廣告連結'] || '';
+  var nameStr = item['社區/建案名稱'] || '';
+  var dateStr = fmtDateSimple(item['拍攝日期']);
+  var timeStr = fmtTimeSimple(item['拍攝時間']);
+  var agentStr = item['承辦'] || '';
+  var priceStr = item['價格'] ? item['價格'] + '萬' : '';
+  var addrText = item['物件地址'] || '';
+  var layout = item['格局'] || '';
+  var age = item['屋齡'] ? u(item['屋齡'], '年') : '';
+  var floor = item['樓層'] || '';
+  var buildArea = item['總建坪'] ? u(item['總建坪'], '坪') : '';
+  var landArea = item['地坪'] ? u(item['地坪'], '坪') : '';
+  var rowIdx = item['_rowIndex'] || '';
+
+  var h = '<div style="font-family:sans-serif;padding:6px 2px;min-width:250px;max-width:320px;font-size:13px;color:#333;line-height:1.8">';
+  if (nameStr) h += '<div style="font-size:14px;font-weight:700;color:#1a1814;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #eee">' + nameStr + '</div>';
+
+  var timeRow = '';
+  if (dateStr) timeRow += dateStr;
+  if (timeStr) timeRow += (timeRow?'　':'') + timeStr;
+  if (agentStr) timeRow += (timeRow?'　':'') + '&#128100; ' + agentStr;
+  if (timeRow) h += '<div>&#128336; ' + timeRow + '</div>';
+
+  if (priceStr || addrText) {
+    h += '<div>';
+    if (priceStr) h += '&#128176; ' + priceStr;
+    if (addrText) h += (priceStr?'　':'') + '&#128205; ' + addrText;
+    h += '</div>';
+  }
+
+  var hasDetail = layout || age || floor || buildArea || landArea;
+  if (hasDetail) {
+    h += '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee;display:grid;grid-template-columns:1fr 1fr;gap:2px 16px">';
+    if (layout) h += '<div><span style="color:#888;font-size:11px">格局</span><br>' + layout + '</div>';
+    if (floor) h += '<div><span style="color:#888;font-size:11px">樓層</span><br>' + floor + '</div>';
+    if (age) h += '<div><span style="color:#888;font-size:11px">屋齡</span><br>' + age + '</div>';
+    if (buildArea) h += '<div><span style="color:#888;font-size:11px">總建坪</span><br>' + buildArea + '</div>';
+    if (landArea) h += '<div><span style="color:#888;font-size:11px">地坪</span><br>' + landArea + '</div>';
+    h += '</div>';
+  }
+
+  h += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #eee">';
+  if (adUrl) h += '<div>&#127968; <a href="' + adUrl + '" target="_blank" style="color:#2d6a4f;font-weight:600;text-decoration:underline">查看物件廣告 &#8599;</a></div>';
+  if (mapUrl) h += '<div>&#128506; <a href="' + mapUrl + '" target="_blank" style="color:#2d6a4f;font-weight:600;text-decoration:underline">開啟 Google Maps &#8599;</a></div>';
+  h += '</div>';
+
+  if (rowIdx) {
+    h += '<button class="edit-btn" onclick="openEditModal(' + rowIdx + ')">&#9998; 編輯此排程</button>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function showPins(date, items, bubble) {
+  if (!map || !mapEnabled) return;
+  markers.forEach(function(m){ if(m&&m.setMap) m.setMap(null); }); markers = [];
+  currentMapItems = items;
+  document.getElementById('map-hint').classList.add('hidden');
+  document.getElementById('map-badge').style.display = 'block';
+  document.getElementById('map-badge').textContent = fmtDayLabel(date) + '　' + items.length + ' 件';
+  document.getElementById('map-open-btn').style.display = 'block';
+  var bounds = new google.maps.LatLngBounds();
+  var validItems = items.filter(function(x){ return x['物件地址']; });
+  if (!validItems.length) return;
+  var count = 0;
+  validItems.forEach(function(item, i) {
+    geocoder.geocode({ address: item['物件地址'] + '，台灣' }, function(results, status) {
+      if (status === 'OK') {
+        var pos = results[0].geometry.location;
+        bounds.extend(pos);
+        var isExclusive = item['是否專任'] === '是';
+        var fillColor = isExclusive ? '#e74c3c' : '#2d6a4f';
+        var marker = new google.maps.Marker({
+          position: pos, map: map,
+          label: { text: String(i+1), color: '#fff', fontSize: '12px', fontWeight: 'bold' },
+          title: item['社區/建案名稱'] || item['物件地址'],
+          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 18, fillColor: fillColor, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+          optimized: false
+        });
+        (function(mk, content) {
+          var info = new google.maps.InfoWindow({ content: content });
+          mk.addListener('click', function(){ info.open(map, mk); });
+        })(marker, buildInfoContent(item));
+        markers.push(marker);
+        count++;
+        if (count === validItems.length) {
+          if (count === 1) map.setCenter(bounds.getCenter());
+          else map.fitBounds(bounds, { padding: 60 });
+        }
+      }
+    });
+  });
+}
+
+function openGoogleMap() {
+  var ORIGIN = encodeURIComponent('有巢氏台中世界之心');
+  var addrs = currentMapItems.map(function(x){ return x['物件地址']; }).filter(Boolean);
+  if (!addrs.length) return;
+  var enc = addrs.map(function(a){ return encodeURIComponent(a + '，台灣'); });
+  var url = enc.length === 1
+    ? 'https://www.google.com/maps/dir/?api=1&origin=' + ORIGIN + '&destination=' + enc[0] + '&travelmode=driving'
+    : 'https://www.google.com/maps/dir/?api=1&origin=' + ORIGIN + '&destination=' + enc[enc.length-1] + '&waypoints=' + enc.slice(0,-1).join('|') + '&travelmode=driving';
+  window.open(url, '_blank');
+}
+
+function checkTimeConflict() {
+  var date = document.getElementById('f-date').value;
+  var time = document.getElementById('f-time').value;
+  if (!date || !time) return;
+  var conflicts = scheduleCache.filter(function(item) {
+    return item['拍攝日期'] === date && fmtTimeSimple(item['拍攝時間']) === time;
+  });
+  if (conflicts.length > 0) {
+    var names = conflicts.map(function(x){ return (x['社區/建案名稱']||'未知物件') + '（' + (x['承辦']||'') + '）'; }).join('、');
+    document.getElementById('conflict-title').textContent = '⚠️ 時段提醒';
+    document.getElementById('conflict-msg').textContent = '此時段（' + fmtDateSimple(date) + ' ' + time + '）已有安排：\n' + names + '\n\n您仍可繼續填寫。';
+    document.getElementById('conflict-overlay').classList.add('open');
+  }
+}
+
+// ── 編輯 Modal ──
+function openEditModal(rowIndex) {
+  var item = scheduleCache.find(function(x){ return x['_rowIndex'] == rowIndex; });
+  if (!item) return;
+  editingRowIndex = rowIndex;
+  document.getElementById('e-date').value = item['拍攝日期'] || '';
+  document.getElementById('e-time').value = fmtTimeSimple(item['拍攝時間']);
+  document.getElementById('e-agent').value = item['承辦'] || '';
+  document.getElementById('e-exclusive').value = item['是否專任'] === '是' ? '是' : '否';
+  document.getElementById('e-mapurl').value = item['Google Maps 網址'] || '';
+  document.getElementById('e-adurl').value = item['廣告連結'] || '';
+  document.getElementById('e-name').value = item['社區/建案名稱'] || '';
+  document.getElementById('e-addr').value = item['物件地址'] || '';
+  document.getElementById('e-price').value = item['價格'] || '';
+  document.getElementById('e-layout').value = item['格局'] || '';
+  document.getElementById('e-age').value = item['屋齡'] || '';
+  document.getElementById('e-floor').value = item['樓層'] || '';
+  document.getElementById('e-build-area').value = item['總建坪'] || '';
+  document.getElementById('e-land-area').value = item['地坪'] || '';
+  document.getElementById('e-desc').value = item['物件介紹'] || '';
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+  editingRowIndex = null;
+}
+
+function saveEdit() {
+  if (!editingRowIndex) return;
+  var btn = document.getElementById('edit-save-btn');
+  btn.disabled = true; btn.textContent = '儲存中…';
+  var data = {
+    date: document.getElementById('e-date').value,
+    time: document.getElementById('e-time').value,
+    agent: document.getElementById('e-agent').value.trim(),
+    exclusive: document.getElementById('e-exclusive').value,
+    mapurl: document.getElementById('e-mapurl').value.trim(),
+    adurl: document.getElementById('e-adurl').value.trim(),
+    name: document.getElementById('e-name').value.trim(),
+    addr: document.getElementById('e-addr').value.trim(),
+    price: document.getElementById('e-price').value.trim(),
+    layout: document.getElementById('e-layout').value.trim(),
+    age: document.getElementById('e-age').value.trim(),
+    floor: document.getElementById('e-floor').value.trim(),
+    buildArea: document.getElementById('e-build-area').value.trim(),
+    landArea: document.getElementById('e-land-area').value.trim(),
+    desc: document.getElementById('e-desc').value.trim()
+  };
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('✓ 已儲存修改');
+      closeEditModal();
+      btn.disabled = false; btn.textContent = '儲存修改';
+    })
+    .withFailureHandler(function() {
+      showToast('儲存失敗，請稍後再試', true);
+      btn.disabled = false; btn.textContent = '儲存修改';
+    })
+    .updateScheduleData(editingRowIndex, data);
+}
+
+function deleteItem() {
+  if (!editingRowIndex) return;
+  if (!confirm('確定要刪除這筆排程嗎？刪除後無法復原。')) return;
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('已刪除排程');
+      closeEditModal();
+    })
+    .withFailureHandler(function() { showToast('刪除失敗，請稍後再試', true); })
+    .deleteScheduleData(editingRowIndex);
+}
+
+// ── 搜尋 ──
+function openSearchModal() {
+  selectedCase = null;
+  document.getElementById('modal-min-price').value = '';
+  document.getElementById('modal-max-price').value = '';
+  document.getElementById('search-results').innerHTML = '<div class="result-empty">請輸入價格範圍後搜尋</div>';
+  document.getElementById('search-results-header').style.display = 'none';
+  document.getElementById('modal-confirm-btn').disabled = true;
+  document.getElementById('selected-label').textContent = '';
+  document.getElementById('search-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('modal-min-price').focus(); }, 100);
+}
+function closeSearchModal() { document.getElementById('search-modal').classList.remove('open'); }
+
+function doSearch() {
+  var minP = parseFloat(document.getElementById('modal-min-price').value) || 0;
+  var maxP = parseFloat(document.getElementById('modal-max-price').value) || 99999;
+  if (!minP) { showToast('請輸入最低價格', true); return; }
+  if (maxP < minP) { showToast('最高價不能低於最低價', true); return; }
+  document.getElementById('search-results').innerHTML = '<div class="searching-state"><div class="spinner"></div>搜尋中，請稍候…</div>';
+  document.getElementById('search-results-header').style.display = 'none';
+  selectedCase = null;
+  document.getElementById('modal-confirm-btn').disabled = true;
+  document.getElementById('selected-label').textContent = '';
+  google.script.run
+    .withSuccessHandler(function(cases) { renderSearchResults(cases, minP, maxP); })
+    .withFailureHandler(function() { document.getElementById('search-results').innerHTML = '<div class="result-empty">搜尋失敗，請稍後再試</div>'; })
+    .searchCases(minP, maxP);
+}
+
+function renderSearchResults(cases, minP, maxP) {
+  var resultsDiv = document.getElementById('search-results');
+  var header = document.getElementById('search-results-header');
+  if (!cases || cases.length === 0) {
+    header.style.display = 'none';
+    resultsDiv.innerHTML = '<div class="result-empty">找不到符合 ' + minP + '～' + maxP + ' 萬的物件</div>';
+    return;
+  }
+  header.style.display = 'block';
+  header.textContent = '找到 ' + cases.length + ' 件（' + minP + '～' + maxP + ' 萬）';
+  resultsDiv.innerHTML = '';
+  cases.forEach(function(c) {
+    var div = document.createElement('div'); div.className = 'result-item';
+    div.innerHTML = '<div class="result-name"><span>' + (c.communityName||'未知社區') + '</span><span class="result-price">' + (c.priceLabel||'') + '</span></div>' +
+      '<div class="result-meta">' + (c.layout?'<span>&#127968; '+c.layout+'</span>':'') + (c.floor?'<span>'+c.floor+'</span>':'') + (c.address?'<span>&#128205; '+c.address+'</span>':'') + '</div>';
+    div.addEventListener('click', function() {
+      document.querySelectorAll('.result-item').forEach(function(el){ el.classList.remove('selected'); });
+      div.classList.add('selected');
+      selectedCase = c;
+      document.getElementById('modal-confirm-btn').disabled = false;
+      document.getElementById('selected-label').textContent = '已選：' + (c.communityName||'') + ' ' + (c.priceLabel||'');
+    });
+    resultsDiv.appendChild(div);
+  });
+}
+
+function confirmSelection() {
+  if (!selectedCase) return;
+  document.getElementById('f-name').value = selectedCase.communityName || '';
+  document.getElementById('f-addr').value = selectedCase.address || '';
+  document.getElementById('f-price').value = selectedCase.priceRaw || '';
+  document.getElementById('f-layout').value = selectedCase.layout || '';
+  document.getElementById('f-age').value = selectedCase.age || '';
+  document.getElementById('f-floor').value = selectedCase.floor || '';
+  document.getElementById('f-build-area').value = selectedCase.buildArea || '';
+  document.getElementById('f-land-area').value = selectedCase.landArea || '';
+  document.getElementById('f-desc').value = selectedCase.description || '';
+  if (selectedCase.linkUrl) document.getElementById('f-adurl').value = selectedCase.linkUrl;
+  closeSearchModal();
+  showToast('已帶入：' + (selectedCase.communityName||''));
+}
+
+// ── 表單送出 ──
+function submitForm() {
+  var date = document.getElementById('f-date').value;
+  var time = document.getElementById('f-time').value;
+  var agent = document.getElementById('f-agent').value.trim();
+  var mapurl = document.getElementById('f-mapurl').value.trim();
+  if (!date || !time || !agent || !mapurl) { showToast('請填寫拍攝日期、時間、承辦及地圖網址', true); return; }
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = '送出中…';
+  var payload = {
+    date: date, time: time, agent: agent, mapurl: mapurl,
+    exclusive: document.getElementById('f-exclusive').value,
+    adurl: document.getElementById('f-adurl').value.trim(),
+    name: document.getElementById('f-name').value.trim(),
+    addr: document.getElementById('f-addr').value.trim(),
+    price: document.getElementById('f-price').value.trim(),
+    layout: document.getElementById('f-layout').value.trim(),
+    age: document.getElementById('f-age').value.trim(),
+    floor: document.getElementById('f-floor').value.trim(),
+    buildArea: document.getElementById('f-build-area').value.trim(),
+    landArea: document.getElementById('f-land-area').value.trim(),
+    desc: document.getElementById('f-desc').value.trim()
+  };
+  google.script.run
+    .withSuccessHandler(function() {
+      showToast('已新增！資料已同步至資料庫');
+      clearForm();
+      btn.disabled = false; btn.textContent = '送出新增';
+    })
+    .withFailureHandler(function() {
+      showToast('送出失敗，請稍後再試', true);
+      btn.disabled = false; btn.textContent = '送出新增';
+    })
+    .saveScheduleData(payload);
+}
+
+function clearForm() {
+  ['f-name','f-addr','f-price','f-layout','f-age','f-floor','f-build-area','f-land-area','f-desc','f-mapurl','f-adurl','f-time']
+    .forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('f-agent').value = '';
+  document.getElementById('f-exclusive').value = '否';
+  document.getElementById('f-date').valueAsDate = new Date();
+  selectedCase = null;
+}
+
+// ── PWA Service Worker & Push ──
+var VAPID_PUBLIC_KEY =  + VAPID_PUBLIC_KEY + ;
+var pushSubscription = null;
+
+function urlBase64ToUint8Array(base64String) {
+  var padding = '='.repeat((4 - base64String.length % 4) % 4);
+  var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var rawData = window.atob(base64);
+  var outputArray = new Uint8Array(rawData.length);
+  for (var i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+function registerPWA() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('sw.js').then(function(reg) {
+    console.log('SW registered');
+    askNotificationPermission(reg);
+  }).catch(function(err) { console.log('SW error:', err); });
+}
+
+function askNotificationPermission(reg) {
+  if (!('Notification' in window) || !('PushManager' in window)) return;
+  if (Notification.permission === 'granted') {
+    subscribePush(reg);
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(function(permission) {
+      if (permission === 'granted') subscribePush(reg);
+    });
+  }
+}
+
+function subscribePush(reg) {
+  reg.pushManager.getSubscription().then(function(sub) {
+    if (sub) { pushSubscription = sub; savePushSubscription(sub); return; }
+    reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    }).then(function(sub) {
+      pushSubscription = sub;
+      savePushSubscription(sub);
+    }).catch(function(err) { console.log('Push subscribe error:', err); });
+  });
+}
+
+function savePushSubscription(sub) {
+  google.script.run
+    .withSuccessHandler(function(){})
+    .withFailureHandler(function(){})
+    .savePushSubscription(JSON.stringify(sub));
+}
+
+// 顯示安裝提示（iOS）
+function showInstallPrompt() {
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isInStandaloneMode = window.navigator.standalone === true;
+  if (isIOS && !isInStandaloneMode) {
+    var banner = document.getElementById('install-banner');
+    if (banner) banner.style.display = 'flex';
+  }
+}
+
+window.addEventListener('load', function() {
+  registerPWA();
+  showInstallPrompt();
+});
+
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 24.147, lng: 120.673 }, zoom: 12,
+    mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+    styles: [
+      { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+      { featureType: 'transit', stylers: [{ visibility: 'off' }] }
+    ]
+  });
+  geocoder = new google.maps.Geocoder();
+}
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCsMXHg2sq_--V4Kmhg_WHxlsAxDEHycSQ&callback=initMap&language=zh-TW"></script>
+</body>
+</html>
