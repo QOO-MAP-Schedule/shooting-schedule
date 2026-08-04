@@ -412,7 +412,7 @@ function loadSchedule() {
   var list = document.getElementById('schedule-list');
   list.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>載入中…</div>';
   clearPins();
-  fetch(SCRIPT_URL + '?action=getScheduleData')
+  fetch(SCRIPT_URL + '?action=getScheduleData', { redirect: 'follow' })
     .then(function(r){ return r.json(); })
     .then(function(result) {
       var data = result.data || [];
@@ -423,7 +423,10 @@ function loadSchedule() {
       else renderSchedule(data);
       showTodayModal(data);
     })
-    .catch(function() { list.innerHTML = '<div class="empty-state">載入失敗，請點重新整理再試</div>'; });
+    .catch(function(err) {
+      console.error('loadSchedule error:', err);
+      list.innerHTML = '<div class="empty-state">載入失敗，請點重新整理再試</div>';
+    });
 }
 
 function checkMapStatus() {
@@ -757,11 +760,11 @@ function saveEdit() {
     landArea: document.getElementById('e-land-area').value.trim(),
     desc: document.getElementById('e-desc').value.trim()
   };
-  fetch(SCRIPT_URL, {
+  fetch(SCRIPT_URL + '?action=updateScheduleData', {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'updateScheduleData', rowIndex: editingRowIndex, data: data })
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ rowIndex: editingRowIndex, data: data })
     }).then(function() {
       showToast('✓ 已儲存修改');
       closeEditModal();
@@ -776,11 +779,11 @@ function saveEdit() {
 function deleteItem() {
   if (!editingRowIndex) return;
   if (!confirm('確定要刪除這筆排程嗎？刪除後無法復原。')) return;
-  fetch(SCRIPT_URL, {
+  fetch(SCRIPT_URL + '?action=deleteScheduleData', {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'deleteScheduleData', rowIndex: editingRowIndex })
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ rowIndex: editingRowIndex })
     }).then(function() {
       showToast('已刪除排程');
       closeEditModal();
@@ -812,10 +815,13 @@ function doSearch() {
   selectedCase = null;
   document.getElementById('modal-confirm-btn').disabled = true;
   document.getElementById('selected-label').textContent = '';
-  fetch(SCRIPT_URL + '?action=searchCases&minPrice=' + minP + '&maxPrice=' + maxP)
+  fetch(SCRIPT_URL + '?action=searchCases&minPrice=' + minP + '&maxPrice=' + maxP, { redirect: 'follow' })
     .then(function(r){ return r.json(); })
     .then(function(cases){ renderSearchResults(cases, minP, maxP); })
-    .catch(function(){ document.getElementById('search-results').innerHTML = '<div class="result-empty">搜尋失敗，請稍後再試</div>'; });
+    .catch(function(err){
+      console.error('search error:', err);
+      document.getElementById('search-results').innerHTML = '<div class="result-empty">搜尋失敗，請稍後再試</div>';
+    });
 }
 
 function renderSearchResults(cases, minP, maxP) {
@@ -883,11 +889,11 @@ function submitForm() {
     landArea: document.getElementById('f-land-area').value.trim(),
     desc: document.getElementById('f-desc').value.trim()
   };
-  fetch(SCRIPT_URL, {
+  fetch(SCRIPT_URL + '?action=saveScheduleData', {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'saveScheduleData', data: payload })
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
     }).then(function() {
       showToast('已新增！資料已同步至資料庫');
       clearForm();
