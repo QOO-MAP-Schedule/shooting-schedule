@@ -412,8 +412,9 @@ function loadSchedule() {
   var list = document.getElementById('schedule-list');
   list.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>載入中…</div>';
   clearPins();
-  google.script.run
-    .withSuccessHandler(function(result) {
+  fetch(SCRIPT_URL + '?action=getScheduleData')
+    .then(function(r){ return r.json(); })
+    .then(function(result) {
       var data = result.data || [];
       mapEnabled = result.mapEnabled !== false;
       scheduleCache = data;
@@ -422,8 +423,7 @@ function loadSchedule() {
       else renderSchedule(data);
       showTodayModal(data);
     })
-    .withFailureHandler(function() { list.innerHTML = '<div class="empty-state">載入失敗，請點重新整理再試</div>'; })
-    .getScheduleData();
+    .catch(function() { list.innerHTML = '<div class="empty-state">載入失敗，請點重新整理再試</div>'; });
 }
 
 function checkMapStatus() {
@@ -757,29 +757,35 @@ function saveEdit() {
     landArea: document.getElementById('e-land-area').value.trim(),
     desc: document.getElementById('e-desc').value.trim()
   };
-  google.script.run
-    .withSuccessHandler(function() {
+  fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'updateScheduleData', rowIndex: editingRowIndex, data: data })
+    }).then(function() {
       showToast('✓ 已儲存修改');
       closeEditModal();
       btn.disabled = false; btn.textContent = '儲存修改';
-    })
-    .withFailureHandler(function() {
+      setTimeout(loadSchedule, 1500);
+    }).catch(function() {
       showToast('儲存失敗，請稍後再試', true);
       btn.disabled = false; btn.textContent = '儲存修改';
-    })
-    .updateScheduleData(editingRowIndex, data);
+    });
 }
 
 function deleteItem() {
   if (!editingRowIndex) return;
   if (!confirm('確定要刪除這筆排程嗎？刪除後無法復原。')) return;
-  google.script.run
-    .withSuccessHandler(function() {
+  fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'deleteScheduleData', rowIndex: editingRowIndex })
+    }).then(function() {
       showToast('已刪除排程');
       closeEditModal();
-    })
-    .withFailureHandler(function() { showToast('刪除失敗，請稍後再試', true); })
-    .deleteScheduleData(editingRowIndex);
+      setTimeout(loadSchedule, 1500);
+    }).catch(function() { showToast('刪除失敗，請稍後再試', true); });
 }
 
 // ── 搜尋 ──
@@ -806,10 +812,10 @@ function doSearch() {
   selectedCase = null;
   document.getElementById('modal-confirm-btn').disabled = true;
   document.getElementById('selected-label').textContent = '';
-  google.script.run
-    .withSuccessHandler(function(cases) { renderSearchResults(cases, minP, maxP); })
-    .withFailureHandler(function() { document.getElementById('search-results').innerHTML = '<div class="result-empty">搜尋失敗，請稍後再試</div>'; })
-    .searchCases(minP, maxP);
+  fetch(SCRIPT_URL + '?action=searchCases&minPrice=' + minP + '&maxPrice=' + maxP)
+    .then(function(r){ return r.json(); })
+    .then(function(cases){ renderSearchResults(cases, minP, maxP); })
+    .catch(function(){ document.getElementById('search-results').innerHTML = '<div class="result-empty">搜尋失敗，請稍後再試</div>'; });
 }
 
 function renderSearchResults(cases, minP, maxP) {
@@ -877,17 +883,20 @@ function submitForm() {
     landArea: document.getElementById('f-land-area').value.trim(),
     desc: document.getElementById('f-desc').value.trim()
   };
-  google.script.run
-    .withSuccessHandler(function() {
+  fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveScheduleData', data: payload })
+    }).then(function() {
       showToast('已新增！資料已同步至資料庫');
       clearForm();
       btn.disabled = false; btn.textContent = '送出新增';
-    })
-    .withFailureHandler(function() {
+      setTimeout(loadSchedule, 1500);
+    }).catch(function() {
       showToast('送出失敗，請稍後再試', true);
       btn.disabled = false; btn.textContent = '送出新增';
-    })
-    .saveScheduleData(payload);
+    });
 }
 
 function clearForm() {
@@ -945,10 +954,12 @@ function subscribePush(reg) {
 }
 
 function savePushSubscription(sub) {
-  google.script.run
-    .withSuccessHandler(function(){})
-    .withFailureHandler(function(){})
-    .savePushSubscription(JSON.stringify(sub));
+  fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'savePushSubscription', sub: JSON.stringify(sub) })
+    }).catch(function(){});
 }
 
 // 顯示安裝提示（iOS）
