@@ -412,9 +412,11 @@ function loadSchedule() {
   var list = document.getElementById('schedule-list');
   list.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>載入中…</div>';
   clearPins();
-  fetch(SCRIPT_URL + '?action=getScheduleData', { redirect: 'follow' })
-    .then(function(r){ return r.json(); })
-    .then(function(result) {
+  jsonp(SCRIPT_URL + '?action=getScheduleData', function(err, result) {
+      if (err || !result) {
+        list.innerHTML = '<div class="empty-state">載入失敗，請點重新整理再試</div>';
+        return;
+      }
       var data = result.data || [];
       mapEnabled = result.mapEnabled !== false;
       scheduleCache = data;
@@ -422,10 +424,6 @@ function loadSchedule() {
       if (!data || data.length === 0) list.innerHTML = '<div class="empty-state">目前還沒有排定的行程</div>';
       else renderSchedule(data);
       showTodayModal(data);
-    })
-    .catch(function(err) {
-      console.error('loadSchedule error:', err);
-      list.innerHTML = '<div class="empty-state">載入失敗，請點重新整理再試</div>';
     });
 }
 
@@ -760,35 +758,25 @@ function saveEdit() {
     landArea: document.getElementById('e-land-area').value.trim(),
     desc: document.getElementById('e-desc').value.trim()
   };
-  fetch(SCRIPT_URL + '?action=updateScheduleData', {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ rowIndex: editingRowIndex, data: data })
-    }).then(function() {
+  var params = 'rowIndex=' + editingRowIndex + '&' + Object.keys(data).map(function(k){
+      return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
+    }).join('&');
+    jsonp(SCRIPT_URL + '?action=updateScheduleData&' + params, function(err, result) {
       showToast('✓ 已儲存修改');
       closeEditModal();
       btn.disabled = false; btn.textContent = '儲存修改';
-      setTimeout(loadSchedule, 1500);
-    }).catch(function() {
-      showToast('儲存失敗，請稍後再試', true);
-      btn.disabled = false; btn.textContent = '儲存修改';
+      setTimeout(loadSchedule, 2000);
     });
 }
 
 function deleteItem() {
   if (!editingRowIndex) return;
   if (!confirm('確定要刪除這筆排程嗎？刪除後無法復原。')) return;
-  fetch(SCRIPT_URL + '?action=deleteScheduleData', {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ rowIndex: editingRowIndex })
-    }).then(function() {
+  jsonp(SCRIPT_URL + '?action=deleteScheduleData&rowIndex=' + editingRowIndex, function(err, result) {
       showToast('已刪除排程');
       closeEditModal();
-      setTimeout(loadSchedule, 1500);
-    }).catch(function() { showToast('刪除失敗，請稍後再試', true); });
+      setTimeout(loadSchedule, 2000);
+    });
 }
 
 // ── 搜尋 ──
@@ -815,12 +803,12 @@ function doSearch() {
   selectedCase = null;
   document.getElementById('modal-confirm-btn').disabled = true;
   document.getElementById('selected-label').textContent = '';
-  fetch(SCRIPT_URL + '?action=searchCases&minPrice=' + minP + '&maxPrice=' + maxP, { redirect: 'follow' })
-    .then(function(r){ return r.json(); })
-    .then(function(cases){ renderSearchResults(cases, minP, maxP); })
-    .catch(function(err){
-      console.error('search error:', err);
-      document.getElementById('search-results').innerHTML = '<div class="result-empty">搜尋失敗，請稍後再試</div>';
+  jsonp(SCRIPT_URL + '?action=searchCases&minPrice=' + minP + '&maxPrice=' + maxP, function(err, cases) {
+      if (err || !cases) {
+        document.getElementById('search-results').innerHTML = '<div class="result-empty">搜尋失敗，請稍後再試</div>';
+        return;
+      }
+      renderSearchResults(cases, minP, maxP);
     });
 }
 
@@ -889,19 +877,15 @@ function submitForm() {
     landArea: document.getElementById('f-land-area').value.trim(),
     desc: document.getElementById('f-desc').value.trim()
   };
-  fetch(SCRIPT_URL + '?action=saveScheduleData', {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    }).then(function() {
+  // 用 JSONP GET 方式送出（繞過 CORS）
+    var params = Object.keys(payload).map(function(k){
+      return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k]);
+    }).join('&');
+    jsonp(SCRIPT_URL + '?action=saveScheduleData&' + params, function(err, result) {
       showToast('已新增！資料已同步至資料庫');
       clearForm();
       btn.disabled = false; btn.textContent = '送出新增';
-      setTimeout(loadSchedule, 1500);
-    }).catch(function() {
-      showToast('送出失敗，請稍後再試', true);
-      btn.disabled = false; btn.textContent = '送出新增';
+      setTimeout(loadSchedule, 2000);
     });
 }
 
@@ -912,6 +896,24 @@ function clearForm() {
   document.getElementById('f-exclusive').value = '否';
   document.getElementById('f-date').valueAsDate = new Date();
   selectedCase = null;
+}
+
+// ── JSONP 工具函式 ──
+function jsonp(url, callback) {
+  var cbName = 'cb_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+  var script = document.createElement('script');
+  window[cbName] = function(data) {
+    delete window[cbName];
+    document.body.removeChild(script);
+    callback(null, data);
+  };
+  script.onerror = function() {
+    delete window[cbName];
+    document.body.removeChild(script);
+    callback(new Error('JSONP failed'));
+  };
+  script.src = url + (url.indexOf('?') > -1 ? '&' : '?') + 'callback=' + cbName;
+  document.body.appendChild(script);
 }
 
 // ── PWA Service Worker & Push ──
@@ -960,12 +962,7 @@ function subscribePush(reg) {
 }
 
 function savePushSubscription(sub) {
-  fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'savePushSubscription', sub: JSON.stringify(sub) })
-    }).catch(function(){});
+  jsonp(SCRIPT_URL + '?action=savePushSubscription&sub=' + encodeURIComponent(JSON.stringify(sub)), function(){});
 }
 
 // 顯示安裝提示（iOS）
